@@ -12,4 +12,4 @@ target_include_directories(casca PRIVATE include)
 
 target_compile_options(casca PRIVATE -Wall -Wextra -Wpedantic -fsanitize=address -g)
 
-target_link_options(casca PRIVATE -fsanitize=address)
+target_link_options(casca PRIVATE -fsanitize=address -static-libasan)
