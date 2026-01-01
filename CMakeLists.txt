@@ -6,6 +6,8 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/*.c)
 
 set(CMAKE_C_STANDARD 23)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_executable(casca ${SOURCE_FILES})
 
 target_include_directories(casca PRIVATE include)
