@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include "parsing.h"
 #include "built_in.h"
@@ -9,6 +10,7 @@
 static const Built_In built_in_array[] = {
                   {echo_command, "echo"},
                   {pwd_command, "pwd"},
+                  {cd_command, "cd"},
                   {type_command, "type" },
                   {exit_command, "exit"},
                   {NULL, NULL}
@@ -70,10 +72,31 @@ void echo_command(char** args){
   }
 }
 
-void pwd_command(char** args){
+void pwd_command([[maybe_unused]]char** args){
   char* cwd = getcwd(NULL, 0);
   printf("%s\n", cwd);
   free(cwd);
+}
+
+void cd_command(char** args){
+  char* target_dir = args[1];
+  if (target_dir == NULL){
+    return ;
+  }
+
+  struct stat dir_info;
+  int dir_status = stat(target_dir, &dir_info);
+    
+  // checks if its a directory and there's not an error
+  if (dir_status == 0 && (dir_info.st_mode & S_IFDIR)){
+    int chdir_status = chdir(target_dir);
+    if (chdir_status != 0){
+      printf("ERROR: error while changing dir.");
+    }
+  }
+  else{
+    printf("cd: %s: No such file or directory\n", target_dir);
+  }
 }
 
 void exit_command(char** args){
