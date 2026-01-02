@@ -30,14 +30,14 @@ char** get_user_input(){
     buff = fgetc(stdin);
   }
   user_input[input_length] = '\0';
-  char** args = parse_args(user_input);
+  char** args = parse_args(user_input, ' ');
 
   free(user_input);
 
   return args;
 }
 
-char** parse_args(char* input){
+char** parse_args(char* input, char delim){
     
   int capacity = 5;
   int* args_length = (int*)malloc(sizeof(int) * capacity);
@@ -48,7 +48,7 @@ char** parse_args(char* input){
   int arg_amount = 0;
   char* cursor = input;
   while (*cursor != '\0'){
-    while(*cursor == ' '){
+    while(*cursor == delim){
       cursor++;
     }
     if (*cursor != '\0'){
@@ -64,7 +64,7 @@ char** parse_args(char* input){
       }
       int len = 0;
       char* aux_cursor = cursor;
-      while(*aux_cursor != ' ' && *aux_cursor != '\0'){
+      while(*aux_cursor != delim && *aux_cursor != '\0'){
         aux_cursor++;
         len++;
       }
@@ -94,7 +94,7 @@ char** parse_args(char* input){
       return NULL;
     }
 
-    while(*cursor == ' ' && *cursor != '\0'){
+    while(*cursor == delim && *cursor != '\0'){
       cursor++;
     }
     strncpy(args[i], cursor, args_length[i]);
