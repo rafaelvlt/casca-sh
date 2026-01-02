@@ -147,3 +147,25 @@ char* search_program(const char* command){
     return NULL;
   }
 }
+
+char* process_prompt_cwd(char* cwd){
+  char* home = getenv("HOME");
+  char* substr_ptr = strstr(cwd, home);
+
+  if (substr_ptr == NULL){
+    return cwd;
+  }
+  else{
+    // +2 for null terminator and tilde
+    char* print_cwd = (char*)malloc(strlen(cwd) - strlen(home) + 2);
+    int idx = 0;
+    print_cwd[idx++] = '~';
+    for (int i = strlen(home); i < (int)strlen(cwd); i++, idx++){
+      print_cwd[idx] = cwd[i];
+    }
+    print_cwd[idx] = '\0';
+    free(cwd);
+    return print_cwd;
+  }
+}
+
