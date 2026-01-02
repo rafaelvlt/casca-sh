@@ -7,6 +7,7 @@ typedef struct{
 } Built_In;
 
 bool handle_built_in(char* command, char** args);
+void pwd_command(char** args);
 void type_command(char** args);
 void echo_command(char** args);
 void exit_command(char** args);

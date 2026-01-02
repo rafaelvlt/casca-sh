@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include "parsing.h"
 #include "built_in.h"
 
 static const Built_In built_in_array[] = {
                   {echo_command, "echo"},
+                  {pwd_command, "pwd"},
                   {type_command, "type" },
                   {exit_command, "exit"},
                   {NULL, NULL}
@@ -65,6 +68,12 @@ void echo_command(char** args){
 
     idx++;
   }
+}
+
+void pwd_command(char** args){
+  char* cwd = getcwd(NULL, 0);
+  printf("%s\n", cwd);
+  free(cwd);
 }
 
 void exit_command(char** args){
