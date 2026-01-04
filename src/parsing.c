@@ -4,6 +4,15 @@
 #include <unistd.h>
 #include "parsing.h"
 
+typedef enum{
+  NORMAL = 0,
+  READING,
+  WRITING,
+  SQUOTE,
+  DQUOTE,
+  END
+} CursorState;
+
 char** get_user_input(){
   char* user_input = NULL;
   unsigned int capacity = 128;
@@ -37,75 +46,171 @@ char** get_user_input(){
   return args;
 }
 
-char** parse_args(char* input, char delim){
-    
-  int capacity = 5;
-  int* args_length = (int*)malloc(sizeof(int) * capacity);
-  if (args_length == NULL){
-    printf("ERROR: Failed to allocate array of args length\n");
-    return NULL;
-  }
-  int arg_amount = 0;
-  char* cursor = input;
-  while (*cursor != '\0'){
-    while(*cursor == delim){
-      cursor++;
-    }
-    if (*cursor != '\0'){
-      if (arg_amount+1 == capacity){
-        capacity *= 2;
-        int* temp = (int*)realloc(args_length, sizeof(int) * capacity); 
-        if (temp == NULL){
-          free(args_length);
-          printf("ERROR: Failed to reallocate for args length");
-          return NULL;
+static void parse_normal_state(char** cursor_ptr, CursorState* state_ptr, char delim){
+      if (**cursor_ptr != delim){
+        if (**cursor_ptr == '\0'){
+          *state_ptr = END;
+        } 
+        else if (**cursor_ptr == '\''){
+          *state_ptr = SQUOTE;
+          (*cursor_ptr)++;
         }
-        args_length = temp;
+        else if (**cursor_ptr == '"'){
+          *state_ptr = DQUOTE;
+        }
+        else{
+          *state_ptr = READING;
+        }
       }
-      int len = 0;
-      char* aux_cursor = cursor;
-      while(*aux_cursor != delim && *aux_cursor != '\0'){
-        aux_cursor++;
-        len++;
+      else{
+        (*cursor_ptr)++;
       }
-      args_length[arg_amount] = len;
-      arg_amount++;
-      cursor = aux_cursor;
+}
+static char** reallocate_args(int* args_capacity_ptr, char*** args_array_ptr, int* args_amount_ptr){
+  (*args_capacity_ptr) *= 2;
+  char** temp = realloc(*args_array_ptr, sizeof(char*) * (*args_capacity_ptr));
+  if (temp == NULL){
+    printf("ERROR: error while reallocating for args array\n");
+    for (int i = 0; i < *args_amount_ptr; i++){
+      free(*args_array_ptr[i]);
+    }
+    free(*args_array_ptr);
+    return NULL;
+  }
+  else{
+    *args_array_ptr = temp;
+  }
+  return *args_array_ptr;
+}
+
+static void parse_writing_state(char** buffer_ptr, CursorState* state_ptr, char*** args_array_ptr,
+                                int* buff_idx_ptr, int* args_amount_ptr, int* args_capacity_ptr)
+{
+  (*args_array_ptr)[*args_amount_ptr] = strdup(*buffer_ptr);
+
+  if (*args_amount_ptr + 1 >= *args_capacity_ptr){
+    (*args_array_ptr) = reallocate_args(args_capacity_ptr, args_array_ptr, args_amount_ptr);
+    if ((*args_array_ptr) == NULL){
+      free(*buffer_ptr);
+      return;
     }
   }
+  *buff_idx_ptr = 0;
+  (*args_amount_ptr)++;
+  *state_ptr = NORMAL;
+}
+static char* reallocate_buffer(char** buffer_ptr, int* buff_capacity_ptr, char*** args_array_ptr, int args_amount){
+  (*buff_capacity_ptr) *= 2;
+  char* temp = realloc((*buffer_ptr), (*buff_capacity_ptr) + 1);
+  if (temp == NULL){
+    printf("ERROR: Failed to reallocate arg (*buffer_ptr)\n");
+    free((*buffer_ptr));
+    for (int i = 0; i < args_amount; i++){
+      free((*args_array_ptr)[i]);
+    }
+    free((*args_array_ptr));
+    return NULL;
+  }
+  else{
+    (*buffer_ptr) = temp;
+  }
+  return (*buffer_ptr);
+}
+static void parse_reading_state(char** cursor_ptr, CursorState* state_ptr, char delim,
+                                char** buffer_ptr, int* buff_idx_ptr, int* buff_capacity_ptr,
+                                char*** args_array_ptr, int args_amount)
+{
+  if (*(*cursor_ptr) == delim || *(*cursor_ptr) == '\0'){
+    (*buffer_ptr)[(*buff_idx_ptr)] = '\0';
+    *state_ptr = WRITING;
+  }
+  else{
+    if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
+      (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
+    }
+    if (*(*cursor_ptr) != '\''){
+      (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+    }
+    (*cursor_ptr)++;
+  }
+}
 
-  char** args = (char**) malloc(sizeof(char*) * (1 + arg_amount));
-  if (args == NULL){
-    printf("ERROR: Failed to allocate memory for args array\n");
-    free(args_length);
+static void parse_squote_state(char** cursor_ptr, CursorState* state_ptr,
+                                char** buffer_ptr, int* buff_idx_ptr, int* buff_capacity_ptr,
+                                char*** args_array_ptr, int args_amount)
+{
+  while((*state_ptr) == SQUOTE){
+    if (*(*cursor_ptr) == '\''){
+      if (*((*cursor_ptr) + 1) == '\''){
+        (*cursor_ptr) += 2;
+      }
+      else{
+        (*cursor_ptr)++;
+        if ((*buff_idx_ptr) > 0){
+          (*buffer_ptr)[(*buff_idx_ptr)] = '\0';
+          (*state_ptr) = WRITING;
+        }
+        else{
+          (*state_ptr) = NORMAL;
+        }
+      }
+    }
+    else{
+      if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
+        (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
+      }
+      (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+      (*cursor_ptr)++;
+    }
+  }
+}
+char** parse_args(char* input, char delim){
+
+  int args_capacity = 3;
+  int args_amount = 0;
+
+  char** args_array = (char**)malloc(sizeof(char*) * args_capacity);
+  if (args_array == NULL){
+    printf("ERROR: failed to malloc for args array\n");
     return NULL;
   }
 
-  cursor = input;
-  for (int i = 0; i < arg_amount; i++){
-    args[i] = (char*)malloc(sizeof(char) * (1 + args_length[i]));
-    if (args[i] == NULL){
-      printf("ERROR: Failed to allocate memory for an arg\n");
-      for (int j = i; j >= 0; j--){
-        free(args[j]);
-      }
-      free(args);
-      free(args_length);
-      return NULL;
-    }
+  CursorState state = NORMAL;
+  char* cursor = &input[0];
 
-    while(*cursor == delim && *cursor != '\0'){
-      cursor++;
-    }
-    strncpy(args[i], cursor, args_length[i]);
-    args[i][args_length[i]] = '\0';
-    cursor = cursor + args_length[i];
+  int buff_capacity = 20;
+  char* buffer = (char*)malloc(buff_capacity + 1);
+  if (buffer == NULL){
+    printf("ERROR: failed to malloc for args buffer");
+    free(args_array);
+    return NULL;
   }
-  //NULL finisher
-  args[arg_amount] = NULL;
-  free(args_length);
-  return args;
-} 
+  memset(buffer, '\0', buff_capacity + 1);
+  int buff_idx = 0;
+
+  while(state != END){
+    if (state == NORMAL){
+      parse_normal_state(&cursor, &state, delim);
+    }
+    else if (state == WRITING){
+      parse_writing_state(&buffer, &state, &args_array,
+                          &buff_idx, &args_amount, &args_capacity);
+    }
+    else if(state == READING){
+      parse_reading_state(&cursor, &state, delim, &buffer, &buff_idx,
+                          &buff_capacity, &args_array, args_amount);
+    }
+    else if (state == SQUOTE){
+      parse_squote_state(&cursor, &state, &buffer, &buff_idx,
+                          &buff_capacity, &args_array, args_amount);
+    }
+  }
+
+  args_array[args_amount] = NULL;
+  free(buffer);
+
+  return args_array;
+}
 
 void free_args(char** args){
   int idx = 0;

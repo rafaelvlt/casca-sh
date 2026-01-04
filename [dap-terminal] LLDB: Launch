@@ -1,0 +1,73 @@
+⭑~/repositorios/casca-sh⭑-» echo teste
+=================================================================
+==563924==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000
+000084 at pc 0x55555566dc99 bp 0x7fffffffdb90 sp 0x7fffffffdb80
+WRITE of size 4 at 0x503000000084 thread T0
+    #0 0x55555566dc98 in get_args_info /home/rafaelvlt/repositorios/casca-s
+h/src/parsing.c:83
+    #1 0x55555566e19b in parse_args /home/rafaelvlt/repositorios/casca-sh/s
+rc/parsing.c:129
+    #2 0x55555566d8d6 in get_user_input /home/rafaelvlt/repositorios/casca-
+sh/src/parsing.c:33
+    #3 0x55555566d67d in main /home/rafaelvlt/repositorios/casca-sh/src/mai
+n.c:18
+    #4 0x7ffff7c2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_
+call_main.h:58
+    #5 0x7ffff7c2a28a in __libc_start_main_impl ../csu/libc-start.c:360
+    #6 0x55555555d684 in _start (/home/rafaelvlt/repositorios/casca-sh/buil
+d/casca+0x9684) (BuildId: 67c189f20fc53491e0ee512632e1869ba05b8e6f)
+
+0x503000000084 is located 0 bytes after 20-byte region [0x503000000070,0x50
+3000000084)
+allocated by thread T0 here:
+    #0 0x55555561575f in malloc (/home/rafaelvlt/repositorios/casca-sh/buil
+d/casca+0xc175f) (BuildId: 67c189f20fc53491e0ee512632e1869ba05b8e6f)
+    #1 0x55555566d91d in get_args_info /home/rafaelvlt/repositorios/casca-s
+h/src/parsing.c:43
+    #2 0x55555566e19b in parse_args /home/rafaelvlt/repositorios/casca-sh/s
+rc/parsing.c:129
+    #3 0x55555566d8d6 in get_user_input /home/rafaelvlt/repositorios/casca-
+sh/src/parsing.c:33
+    #4 0x55555566d67d in main /home/rafaelvlt/repositorios/casca-sh/src/mai
+n.c:18
+    #5 0x7ffff7c2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_
+call_main.h:58
+    #6 0x7ffff7c2a28a in __libc_start_main_impl ../csu/libc-start.c:360
+    #7 0x55555555d684 in _start (/home/rafaelvlt/repositorios/casca-sh/buil
+d/casca+0x9684) (BuildId: 67c189f20fc53491e0ee512632e1869ba05b8e6f)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /home/rafaelvlt/repositorio
+s/casca-sh/src/parsing.c:83 in get_args_info
+Shadow bytes around the buggy address:
+  0x502ffffffe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x503000000000: fa fa 00 00 00 fa fa fa fd fd fd fa fa fa 00 00
+=>0x503000000080:[04]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000100: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==563924==ABORTING
+
