@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include "parsing.h"
@@ -46,4 +47,37 @@ void execute_external_program(char* command, char** args){
         printf("%s: command not found\n", command);
         
       }
+}
+
+
+char* search_program(const char* command){
+  bool found = false;
+
+  char* path_variable = strdup(getenv("PATH"));
+  //entire path(even if its only one) + program size + '\0' and /
+  int buffer_size = strlen(path_variable) + strlen(command) + 2;
+  char* current_path = strtok(path_variable, ":"); 
+
+  char* path_dest = (char*)malloc(sizeof(char) * buffer_size);
+
+  while (current_path != NULL && found == false){
+    snprintf(path_dest, buffer_size, "%s/%s", current_path, command);
+
+    // syscall to check execute permission and file existence
+    if (access(path_dest, X_OK) == 0){
+      found = true; 
+    }
+    else{
+      current_path = strtok(NULL, ":");
+    }
+  }
+  free(path_variable);
+
+  if (found){
+    return path_dest;
+  }
+  else{
+    free(path_dest);
+    return NULL;
+  }
 }
