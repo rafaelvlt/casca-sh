@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "parsing.h"
 
+
 typedef enum{
   NORMAL = 0,
   READING,
@@ -57,6 +58,7 @@ static void parse_normal_state(char** cursor_ptr, CursorState* state_ptr, char d
         }
         else if (**cursor_ptr == '"'){
           *state_ptr = DQUOTE;
+          (*cursor_ptr)++;
         }
         else{
           *state_ptr = READING;
@@ -128,7 +130,11 @@ static void parse_reading_state(char** cursor_ptr, CursorState* state_ptr, char 
     if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
       (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
     }
-    if (*(*cursor_ptr) != '\''){
+    if ((**cursor_ptr) == '\\'){
+      (*cursor_ptr)++;
+      (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+    }
+    else if (!((**cursor_ptr) == '\'' || (**cursor_ptr) == '"')){
       (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
     }
     (*cursor_ptr)++;
@@ -159,11 +165,67 @@ static void parse_squote_state(char** cursor_ptr, CursorState* state_ptr,
       if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
         (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
       }
-      (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+      if ((**cursor_ptr) == '\\'){
+        (*cursor_ptr)++;
+        (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+      }
+      else{
+        (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+      }
       (*cursor_ptr)++;
     }
   }
 }
+
+
+static void parse_dquote_state(char** cursor_ptr, CursorState* state_ptr,
+                                char** buffer_ptr, int* buff_idx_ptr, int* buff_capacity_ptr,
+                                char*** args_array_ptr, int args_amount)
+{
+  while((*state_ptr) == DQUOTE){
+    if (*(*cursor_ptr) == '"'){
+      if (*((*cursor_ptr) + 1) == '"'){
+        (*cursor_ptr) += 2;
+      }
+      else{
+        (*cursor_ptr)++;
+        if ((*buff_idx_ptr) > 0){
+          (*buffer_ptr)[(*buff_idx_ptr)] = '\0';
+          (*state_ptr) = WRITING;
+        }
+        else{
+          (*state_ptr) = NORMAL;
+        }
+      }
+    }
+    else{
+      if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
+        (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
+      }
+      if ((**cursor_ptr) == '\\'){
+        char escape_sequence[] = "$\"\\\n";
+        bool should_escape = false;
+        for (char* escape_ptr = escape_sequence; *escape_ptr != '\0'; escape_ptr++){
+          if (*(*cursor_ptr + 1) == *escape_ptr){
+            should_escape = true;
+          }
+        }
+        if (should_escape){
+          (*cursor_ptr)++;
+          (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+        }
+        else{
+          (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+        }
+      }
+      else{
+        (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
+      }
+      (*cursor_ptr)++;
+    }
+  }
+}
+
 char** parse_args(char* input, char delim){
 
   int args_capacity = 3;
@@ -202,6 +264,10 @@ char** parse_args(char* input, char delim){
     }
     else if (state == SQUOTE){
       parse_squote_state(&cursor, &state, &buffer, &buff_idx,
+                          &buff_capacity, &args_array, args_amount);
+    }
+    else if(state == DQUOTE){
+      parse_dquote_state(&cursor, &state, &buffer, &buff_idx,
                           &buff_capacity, &args_array, args_amount);
     }
   }

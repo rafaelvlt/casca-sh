@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include "parsing.h"
 #include "built_in.h"
+#include "exec_programs.h"
 
 static const Built_In built_in_array[] = {
                   {echo_command, "echo"},
