@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "parsing.h"
 
-
 typedef enum{
   NORMAL = 0,
   READING,
@@ -130,11 +129,17 @@ static void parse_reading_state(char** cursor_ptr, CursorState* state_ptr, char 
     if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
       (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
     }
-    if ((**cursor_ptr) == '\\'){
+    if ((**cursor_ptr) == '\\' && *(*cursor_ptr + 1) != '\0'){
       (*cursor_ptr)++;
       (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
     }
-    else if (!((**cursor_ptr) == '\'' || (**cursor_ptr) == '"')){
+    else if ((**cursor_ptr) == '\''){
+      *state_ptr = SQUOTE;
+    }
+    else if((**cursor_ptr) == '"'){
+      *state_ptr = DQUOTE;
+    }
+    else{
       (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
     }
     (*cursor_ptr)++;
@@ -146,32 +151,15 @@ static void parse_squote_state(char** cursor_ptr, CursorState* state_ptr,
                                 char*** args_array_ptr, int args_amount)
 {
   while((*state_ptr) == SQUOTE){
-    if (*(*cursor_ptr) == '\''){
-      if (*((*cursor_ptr) + 1) == '\''){
-        (*cursor_ptr) += 2;
-      }
-      else{
+    if (*(*cursor_ptr) == '\'' || *(*cursor_ptr) == '\0'){
         (*cursor_ptr)++;
-        if ((*buff_idx_ptr) > 0){
-          (*buffer_ptr)[(*buff_idx_ptr)] = '\0';
-          (*state_ptr) = WRITING;
-        }
-        else{
-          (*state_ptr) = NORMAL;
-        }
-      }
+        (*state_ptr) = READING; 
     }
     else{
       if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
         (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
       }
-      if ((**cursor_ptr) == '\\'){
-        (*cursor_ptr)++;
-        (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
-      }
-      else{
-        (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
-      }
+      (*buffer_ptr)[(*buff_idx_ptr)++] = *(*cursor_ptr);
       (*cursor_ptr)++;
     }
   }
@@ -183,27 +171,16 @@ static void parse_dquote_state(char** cursor_ptr, CursorState* state_ptr,
                                 char*** args_array_ptr, int args_amount)
 {
   while((*state_ptr) == DQUOTE){
-    if (*(*cursor_ptr) == '"'){
-      if (*((*cursor_ptr) + 1) == '"'){
-        (*cursor_ptr) += 2;
-      }
-      else{
-        (*cursor_ptr)++;
-        if ((*buff_idx_ptr) > 0){
-          (*buffer_ptr)[(*buff_idx_ptr)] = '\0';
-          (*state_ptr) = WRITING;
-        }
-        else{
-          (*state_ptr) = NORMAL;
-        }
-      }
+    if (*(*cursor_ptr) == '"' || *(*cursor_ptr) == '\0'){
+      (*cursor_ptr)++;
+      *state_ptr = READING;
     }
     else{
       if (((*buff_idx_ptr) + 1) == *buff_capacity_ptr){
         (*buffer_ptr) = reallocate_buffer(buffer_ptr, buff_capacity_ptr, args_array_ptr, args_amount);
       }
       if ((**cursor_ptr) == '\\'){
-        char escape_sequence[] = "$\"\\\n";
+        char escape_sequence[] = "$\"\\";
         bool should_escape = false;
         for (char* escape_ptr = escape_sequence; *escape_ptr != '\0'; escape_ptr++){
           if (*(*cursor_ptr + 1) == *escape_ptr){
