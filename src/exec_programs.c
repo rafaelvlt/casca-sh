@@ -19,7 +19,7 @@ void handle_command(char* command, char** args){
 
   if (redirection.fd != NO_REDIRECTION){
     backup_stdout = dup(redirection.fd);
-    outfile_fd = open(redirection.target_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    outfile_fd = open(redirection.target_path, redirection.open_flags, redirection.mode_flags);
     dup2(outfile_fd, redirection.fd);
   }
 
@@ -54,7 +54,7 @@ void execute_external_program(char* command, char** args, info_redirection redir
     }
     else if(c_process == 0){
       if (redirection.fd != NO_REDIRECTION){
-        int outfile_fd = open(redirection.target_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        int outfile_fd = open(redirection.target_path, redirection.open_flags, redirection.mode_flags);
         dup2(outfile_fd, redirection.fd);
         close(outfile_fd);
       }
