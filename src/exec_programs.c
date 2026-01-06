@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -16,16 +17,16 @@ void handle_command(char* command, char** args){
   int backup_stdout = 0;
   int outfile_fd = 0;
 
-  if (redirection.fd == FD_STDOUT){
-    backup_stdout = dup(FD_STDOUT);
+  if (redirection.fd != NO_REDIRECTION){
+    backup_stdout = dup(redirection.fd);
     outfile_fd = open(redirection.target_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    dup2(outfile_fd, FD_STDOUT);
+    dup2(outfile_fd, redirection.fd);
   }
 
   bool success = handle_built_in(command, args); 
 
-  if (redirection.fd == FD_STDOUT){
-    dup2(backup_stdout, FD_STDOUT);
+  if (redirection.fd != NO_REDIRECTION){
+    dup2(backup_stdout, redirection.fd);
     close(backup_stdout);
     close(outfile_fd);
   }
@@ -52,9 +53,9 @@ void execute_external_program(char* command, char** args, info_redirection redir
       free(command_path);
     }
     else if(c_process == 0){
-      if (redirection.fd == FD_STDOUT){
+      if (redirection.fd != NO_REDIRECTION){
         int outfile_fd = open(redirection.target_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-        dup2(outfile_fd, FD_STDOUT);
+        dup2(outfile_fd, redirection.fd);
         close(outfile_fd);
       }
       execve(command_path, args, environ);
