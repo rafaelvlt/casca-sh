@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,47 +7,71 @@
 #include "parsing.h"
 #include "built_in.h"
 #include "exec_programs.h"
+#include "redirection.h"
 
 extern char** environ;
 
 void handle_command(char* command, char** args){
+  info_redirection redirection = check_for_redirection(args);
+  int backup_stdout = 0;
+  int outfile_fd = 0;
+
+  if (redirection.fd == FD_STDOUT){
+    backup_stdout = dup(FD_STDOUT);
+    outfile_fd = open(redirection.target_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    dup2(outfile_fd, FD_STDOUT);
+  }
+
   bool success = handle_built_in(command, args); 
+
+  if (redirection.fd == FD_STDOUT){
+    dup2(backup_stdout, FD_STDOUT);
+    close(backup_stdout);
+    close(outfile_fd);
+  }
   if (!success){
-    execute_external_program(command, args);
+    execute_external_program(command, args, redirection);
+  }
+
+
+  if (redirection.fd != NO_REDIRECTION){
+    free(redirection.target_path);
   }
 }
 
-void execute_external_program(char* command, char** args){
-      char* command_path = NULL;
-      command_path = search_program(command); 
+void execute_external_program(char* command, char** args, info_redirection redirection){
+  char* command_path = NULL;
+  command_path = search_program(command); 
 
-      if (command_path != NULL){
+  if (command_path != NULL){
 
-        pid_t c_process = fork();
+    pid_t c_process = fork();
 
-        if (c_process == -1){
-          printf("ERROR: Failed to fork\n");
-          free(command_path);
-        }
-        else if(c_process == 0){
-
-          execve(command_path, args, environ);
-
-          free_args(args);
-          free(command_path);
-
-          exit(EXIT_SUCCESS);
-        }
-        else{
-          int status;
-          waitpid(c_process, &status, 0);
-          free(command_path);
-        }
+    if (c_process == -1){
+      printf("ERROR: Failed to fork\n");
+      free(command_path);
+    }
+    else if(c_process == 0){
+      if (redirection.fd == FD_STDOUT){
+        int outfile_fd = open(redirection.target_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        dup2(outfile_fd, FD_STDOUT);
+        close(outfile_fd);
       }
-      else{
-        printf("%s: command not found\n", command);
-        
-      }
+      execve(command_path, args, environ);
+      free_args(args);
+      free(command_path);
+      exit(EXIT_SUCCESS);
+    }
+    else{
+      int status;
+      waitpid(c_process, &status, 0);
+      free(command_path);
+    }
+  }
+  else{
+    printf("%s: command not found\n", command);
+
+  }
 }
 
 

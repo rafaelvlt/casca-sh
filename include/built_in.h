@@ -1,6 +1,7 @@
 #ifndef BUILT_IN_H
 #define BUILT_IN_H
 
+#include "redirection.h"
 typedef struct{
   void(* built_in_function)(char**);
   const char* name;
