@@ -17,7 +17,7 @@ info_redirection check_for_redirection(char** args){
       args[idx] = NULL;
       args[idx+1] = NULL;
     }
-    if (!strcmp(args[idx], "2>")){
+    else if (!strcmp(args[idx], "2>")){
       info.fd = FD_STDERR;    
       info.target_path = strdup(args[idx+1]);
       free(args[idx]);
