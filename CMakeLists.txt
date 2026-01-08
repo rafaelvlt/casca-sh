@@ -10,8 +10,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(casca ${SOURCE_FILES})
 
+find_library(READLINE_LIB readline)
+
+if (NOT READLINE_LIB)
+  message(FATAL_ERROR "readline lib not found! install the package libreadline-dev.")
+endif()
+
+target_link_libraries(casca PRIVATE ${READLINE_LIB})
+
 target_include_directories(casca PRIVATE include)
 
-target_compile_options(casca PRIVATE -Wall -Wextra -Wpedantic -fsanitize=address -g)
+target_compile_options(casca PRIVATE -Wall -Wextra -Wpedantic -Werror -fsanitize=address -g)
 
 target_link_options(casca PRIVATE -fsanitize=address -static-libasan)
