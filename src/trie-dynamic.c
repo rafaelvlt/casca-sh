@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "trie.h"
+#include "trie-dynamic.h"
 
-Trie* trieCreate() {
+Trie* trie_create() {
     Trie* node = (Trie*)malloc(sizeof(Trie));
 
     int capacity = 1;
@@ -17,7 +17,7 @@ Trie* trieCreate() {
     return node;
 }
 
-void trieInsert(Trie* obj, char* word) {
+void trie_insert(Trie* obj, char* word) {
   if (*word == '\0'){
     obj->is_leaf = true;
     return;
@@ -41,17 +41,17 @@ void trieInsert(Trie* obj, char* word) {
       }
       obj->children = temp;
     }
-    obj->children[obj->children_quantity] = trieCreate();
+    obj->children[obj->children_quantity] = trie_create();
     obj->children[obj->children_quantity]->letter = *word;
-    trieInsert(obj->children[obj->children_quantity], word+1);
+    trie_insert(obj->children[obj->children_quantity], word+1);
     obj->children_quantity++;
   }
   else{
-    trieInsert(target, word+1);
+    trie_insert(target, word+1);
   }
 }
 
-bool trieSearch(Trie* obj, char* word) {
+bool trie_search(Trie* obj, const char* word) {
   if (*word == '\0'){
     if (obj->is_leaf){
       return true;
@@ -62,29 +62,29 @@ bool trieSearch(Trie* obj, char* word) {
   }
   for (int i = 0; i < obj->children_quantity; i++){
     if (obj->children[i]->letter == *word){
-      return trieSearch(obj->children[i], word+1);
+      return trie_search(obj->children[i], word+1);
     }
   }
   return false;
 }
 
-bool trieStartsWith(Trie* obj, char* prefix) {
+bool trie_starts_with(Trie* obj, const char* prefix) {
   if (*prefix == '\0'){
       return true;
   }
   for (int i = 0; i < obj->children_quantity; i++){
     if (obj->children[i]->letter == *prefix){
-      return trieStartsWith(obj->children[i], prefix+1);
+      return trie_starts_with(obj->children[i], prefix+1);
     }
   }
   return false;
 }
 
-void trieFree(Trie* obj) {
+void trie_free(Trie* obj) {
   if (obj == NULL) return;
 
   for (int i = 0; i < obj->children_quantity; i++){
-    trieFree(obj->children[i]);
+    trie_free(obj->children[i]);
   }
   free(obj->children);
   free(obj);

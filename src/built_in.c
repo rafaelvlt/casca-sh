@@ -10,7 +10,7 @@
 #include "built_in.h"
 #include "exec_programs.h"
 
-static const Built_In built_in_array[] = {
+static Built_In built_in_array[] = {
                   {echo_command, "echo"},
                   {pwd_command, "pwd"},
                   {cd_command, "cd"},
@@ -29,6 +29,12 @@ bool handle_built_in(char* command, char** args){
     idx++;
   }
   return false;
+}
+
+void autocomplete_load_built_in(Trie* dictionary){
+  for(int i = 0; built_in_array[i].name != NULL; i++){
+    trie_insert(dictionary, built_in_array[i].name);
+  }
 }
 
 void type_command(char** args){

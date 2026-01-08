@@ -9,14 +9,14 @@ typedef struct Trie {
     struct Trie** children;
 } Trie;
 
-Trie* trieCreate();
+Trie* trie_create();
 
-void trieInsert(Trie* obj, char* word);
+void trie_insert(Trie* obj, char* word);
 
-bool trieSearch(Trie* obj, char* word);
+bool trie_search(Trie* obj, const char* word);
 
-bool trieStartsWith(Trie* obj, char* prefix);
+bool trie_starts_with(Trie* obj, const char* prefix);
     
-void trieFree(Trie* obj);
+void trie_free(Trie* obj);
 
 #endif
