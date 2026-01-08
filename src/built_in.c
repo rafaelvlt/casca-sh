@@ -9,6 +9,7 @@
 #include "parsing.h"
 #include "built_in.h"
 #include "exec_programs.h"
+#include "autocomplete.h"
 
 static Built_In built_in_array[] = {
                   {echo_command, "echo"},

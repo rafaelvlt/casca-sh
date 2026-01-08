@@ -5,10 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include "parsing.h"
 #include "built_in.h"
 #include "exec_programs.h"
 #include "redirection.h"
+#include "autocomplete.h"
 
 extern char** environ;
 
@@ -106,4 +109,35 @@ char* search_program(const char* command){
     free(path_dest);
     return NULL;
   }
+}
+
+void autocomplete_load_PATH(Trie* dictionary){
+  char* path_variable = strdup(getenv("PATH"));
+
+  //entire path(even if its only one) + program size + '\0' and /
+  char* current_path = strtok(path_variable, ":"); 
+
+  while (current_path != NULL){
+    DIR* dir_ptr = opendir(current_path);
+    if (dir_ptr != NULL){
+      struct dirent* dir_st = readdir(dir_ptr);
+      while(dir_st != NULL){
+        if (dir_st->d_name[0] != '.'){
+          int name_len = strlen(current_path) + strlen(dir_st->d_name) + 2;
+          char file_path[name_len];
+          snprintf(file_path, sizeof(file_path), "%s/%s", current_path, dir_st->d_name);
+
+          struct stat stat_buffer;
+          if (stat(file_path, &stat_buffer) == 0){
+            if (S_ISREG(stat_buffer.st_mode) && !access(file_path, X_OK)){
+              trie_insert(dictionary, dir_st->d_name);
+            }
+          } 
+        }
+        dir_st = readdir(dir_ptr);
+      }
+    }
+    if (dir_ptr != NULL) closedir(dir_ptr);
+    current_path = strtok(NULL, ":"); }
+  free(path_variable);
 }

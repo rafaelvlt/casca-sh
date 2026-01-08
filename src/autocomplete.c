@@ -4,12 +4,14 @@
 #include "built_in.h"
 #include "trie-dynamic.h"
 #include "autocomplete.h"
+#include "exec_programs.h"
 
 static Trie* autocomplete_dictionary = NULL;
 
 void create_autocomplete_trie(){
   autocomplete_dictionary = trie_create();
   autocomplete_load_built_in(autocomplete_dictionary);
+  autocomplete_load_PATH(autocomplete_dictionary);
   rl_attempted_completion_function = autocomplete_user_input;
 }
 
