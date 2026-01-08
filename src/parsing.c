@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -14,32 +16,14 @@ typedef enum{
   END
 } CursorState;
 
-char** get_user_input(){
-  char* user_input = NULL;
-  unsigned int capacity = 128;
-  user_input = (char*)malloc(capacity);
+char** get_user_input(char* prompt_cwd){
+  char* full_prompt = NULL;
+  asprintf(&full_prompt, "⭑%s⭑-» ", prompt_cwd);
 
-  unsigned int input_length = 0;
-  int buff = fgetc(stdin);
-  while (buff != EOF && buff != '\n') {
-    if (input_length + 1 >= capacity){
-      capacity *= 2;
-      char* temp = realloc(user_input, capacity);
+  char* user_input = readline(full_prompt);
+  
+  free(full_prompt);
 
-      if (temp == NULL){
-        printf("ERROR: failed to reallocate input buffer\n");
-        free(user_input);
-        return NULL;
-      }
-
-      user_input = temp;
-    }
-    if (buff != EOF){
-      user_input[input_length++] = buff;
-    }
-    buff = fgetc(stdin);
-  }
-  user_input[input_length] = '\0';
   char** args = parse_args(user_input, ' ');
 
   free(user_input);
