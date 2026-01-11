@@ -6,16 +6,17 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include "history.h"
 #include "parsing.h"
 #include "built_in.h"
 #include "exec_programs.h"
-#include "autocomplete.h"
 
 static Built_In built_in_array[] = {
                   {echo_command, "echo"},
                   {pwd_command, "pwd"},
                   {cd_command, "cd"},
                   {type_command, "type" },
+                  {history_command, "history"},
                   {exit_command, "exit"},
                   {NULL, NULL}
 };
@@ -170,11 +171,16 @@ void cd_command(char** args){
   free(target_dir);
 }
 
+void history_command([[maybe_unused]] char** args){
+  print_history();
+}
+
 void exit_command(char** args){
   int exit_code = EXIT_SUCCESS;
   if (args[1] != NULL){
     exit_code = atoi(args[1]);
   }
   free_args(args);
+  free_history();
   exit(exit_code);
 }

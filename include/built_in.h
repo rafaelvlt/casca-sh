@@ -2,7 +2,6 @@
 #define BUILT_IN_H
 #include "trie-dynamic.h"
 
-
 typedef struct{
   void(* built_in_function)(char**);
   char* name;
@@ -16,6 +15,7 @@ void type_command(char** args);
 void echo_command(char** args);
 void pwd_command(char** args);
 void cd_command(char** args);
+void history_command(char** args);
 void exit_command(char** args);
 
 #endif

@@ -6,15 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "parsing.h"
+#include "history.h"
 
-typedef enum{
-  NORMAL = 0,
-  READING,
-  WRITING,
-  SQUOTE,
-  DQUOTE,
-  END
-} CursorState;
 
 char** get_user_input(char* prompt_cwd){
   char* full_prompt = NULL;
@@ -23,6 +16,8 @@ char** get_user_input(char* prompt_cwd){
   char* user_input = readline(full_prompt);
   
   free(full_prompt);
+
+  add_to_history(user_input);
 
   char** args = parse_args(user_input, ' ');
 
