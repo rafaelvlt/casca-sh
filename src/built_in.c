@@ -172,7 +172,11 @@ void cd_command(char** args){
 }
 
 void history_command([[maybe_unused]] char** args){
-  print_history();
+  int last = 1024;
+  if (args[1] != NULL){
+    last = atoi(args[1]);
+  }
+  print_history(last);
 }
 
 void exit_command(char** args){

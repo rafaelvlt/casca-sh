@@ -66,11 +66,19 @@ void add_to_history(char* user_input){
   fclose(fstream);
 }
 
-void print_history(){
-  unsigned int start_idx = (history.history_count < HISTORY_SIZE) ? 0 : history.history_count % HISTORY_SIZE;
-  for (unsigned int i = 0; i < HISTORY_SIZE && i < history.history_count; i++){
+void print_history(int last){
+  if (last < 1){
+    printf("usage: history <n> | n being a greater than 0\n");
+    return;
+  }
+
+  unsigned int available = (history.history_count < HISTORY_SIZE) ? history.history_count : HISTORY_SIZE;
+  unsigned int total = ((unsigned int)last < available) ? (unsigned int) last : available;
+  unsigned int start_idx =  (history.history_count < HISTORY_SIZE) ? 0 : history.history_count % HISTORY_SIZE;
+
+  for (unsigned int i = available - total; i < available; i++){
     unsigned int index = (start_idx + i) % HISTORY_SIZE;
-    printf("%d %s\n", i+1, history.history_array[index].input);
+    printf("    %d  %s\n", i+1, history.history_array[index].input);
   }
 }
 
@@ -93,7 +101,12 @@ void sync_history(){
 }
 
 void clear_history(){
-   
+  FILE* fstream = fopen(history.path, "w");
+  if (fstream == NULL){
+    printf("ERROR: failed to open history file to clear it\n");
+    return;
+  }
+  fclose(fstream);
 }
 
 void free_history(){

@@ -15,7 +15,7 @@ typedef struct History{
 
 void init_history();
 void add_to_history(char* input);
-void print_history();
+void print_history(int last);
 void sync_history();
 void clear_history();
 void free_history();
